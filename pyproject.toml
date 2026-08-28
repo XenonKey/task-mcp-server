@@ -1,0 +1,23 @@
+[project]
+name = "task-mcp-server"
+version = "0.1.0"
+description = "MCP server wrapping a task-tracking REST API as tools, with Cognito OAuth 2.1 auth"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.78",
+    "fastmcp>=3.4.7",
+    "httpx>=0.28.1",
+    "mangum>=0.21.0",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.3",
+]
+
+[dependency-groups]
+dev = [
+    "opentelemetry-api>=1.44.0",
+    "opentelemetry-exporter-otlp>=1.44.0",
+    "opentelemetry-instrumentation-httpx>=0.65b0",
+    "opentelemetry-sdk>=1.44.0",
+]

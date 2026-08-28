@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "task-mcp-server"
+resolve_s3 = true
+s3_prefix = "task-mcp-server"
+region = "eu-north-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "TaskApiBase=\"https://your-task-api.example.com/tasks\" CognitoUserPoolId=\"eu-north-1_xxxxxxxxx\" CognitoAppClientId=\"your-cognito-app-client-id\" McpResourceServerUrl=\"https://your-api-id.execute-api.eu-north-1.amazonaws.com\""
+image_repositories = []
+
+[default.global.parameters]
+region = "eu-north-1"

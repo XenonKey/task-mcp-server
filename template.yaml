@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Task Work Service MCP Server on AWS Lambda
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+  TaskMcpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambda_handler.handler
+      Runtime: python3.12
+      Environment:
+        Variables:
+          TASK_API_BASE: !Ref TaskApiBase
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+          COGNITO_APP_CLIENT_ID: !Ref CognitoAppClientId
+          MCP_RESOURCE_SERVER_URL: !Ref McpResourceServerUrl
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Parameters:
+  TaskApiBase:
+    Type: String
+    Description: Base URL of the task-service REST API this MCP server wraps
+  CognitoUserPoolId:
+    Type: String
+    Description: Cognito User Pool ID, e.g. eu-north-1_xxxxxxxxx
+  CognitoAppClientId:
+    Type: String
+    Description: Cognito App Client ID (public client, no secret)
+  McpResourceServerUrl:
+    Type: String
+    Description: Origin this stack will be reachable at once deployed (no path, RemoteAuthProvider appends /mcp itself) — you only know this after the first deploy, see README
+
+Outputs:
+  ApiUrl:
+    Description: "Публичный URL твоего MCP-сервера"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/mcp"
