@@ -11,10 +11,10 @@ from config import settings
 def _auth_headers() -> dict[str, str]:
     token = get_access_token()
     if token is None:
-        raise RuntimeError("Нет авторизации: этот сценарий требует HTTP-транспорт с Cognito")
+        raise RuntimeError("Not authenticated: this requires the HTTP transport with Cognito")
 
     if token.client_id != settings.cognito_app_client_id:
-        raise ToolError("Токен выпущен для другого клиента")
+        raise ToolError("Token was issued for a different client")
 
     return {"Authorization": f"Bearer {token.token}"}
 
@@ -25,13 +25,13 @@ mcp = FastMCP("task-work-service", auth=build_auth_provider())
 @mcp.tool()
 async def get_all_tasks(status: str | None = None, limit: int = 20):
     """
-    Получить список задач с фильтром по статусу и лимитом.
+    Get a list of tasks, filtered by status and limit.
 
     Args:
-        status: Статус задачи. Возможные значения:
+        status: Task status. Possible values:
             "OPEN", "IN_PROGRESS", "DONE", "APPROVED", "REJECTED".
-            Если не указан — вернутся задачи всех статусов.
-        limit: Максимальное количество задач в ответе (по умолчанию 20).
+            If not specified, tasks of all statuses are returned.
+        limit: Maximum number of tasks in the response (default 20).
     """
 
     class TaskFilter(BaseModel):
@@ -50,12 +50,12 @@ async def get_all_tasks(status: str | None = None, limit: int = 20):
 @mcp.tool()
 async def list_my_tasks(status: str | None = None, limit: int = 20):
     """
-    Получить список задач текущего пользователя (где он исполнитель).
+    Get the list of tasks for the current user (where they're the performer).
 
     Args:
-        status: Статус задачи для фильтрации. Возможные значения:
+        status: Task status to filter by. Possible values:
             "OPEN", "IN_PROGRESS", "DONE", "APPROVED", "REJECTED".
-            Если не указан — вернутся все задачи пользователя.
+            If not specified, all of the user's tasks are returned.
     """
     raw_params = {"status_filter": status, "limit": limit}
     params = {k: v for k, v in raw_params.items() if v is not None}
@@ -73,12 +73,12 @@ async def list_my_tasks(status: str | None = None, limit: int = 20):
 @mcp.tool()
 async def claim_task(task_id: str):
     """
-    Взять задачу в работу. Задача должна быть в статусе OPEN.
-    После вызова задача переходит в статус IN_PROGRESS, а исполнителем
-    становится текущий пользователь.
+    Claim a task. The task must be in OPEN status.
+    After this call the task moves to IN_PROGRESS, and the current user
+    becomes its performer.
 
     Args:
-        task_id: ID задачи в формате UUID.
+        task_id: Task ID (UUID).
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -92,13 +92,12 @@ async def claim_task(task_id: str):
 @mcp.tool()
 async def complete_task(task_id: str):
     """
-    Отметить задачу как выполненную. Задача должна быть в статусе
-    IN_PROGRESS или REJECTED, и текущий пользователь должен быть
-    её исполнителем. После вызова задача переходит в статус DONE
-    и ожидает подтверждения администратором.
+    Mark a task as done. The task must be in IN_PROGRESS or REJECTED
+    status, and the current user must be its performer. After this call
+    the task moves to DONE and waits for admin approval.
 
     Args:
-        task_id: ID задачи в формате UUID.
+        task_id: Task ID (UUID).
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -112,8 +111,7 @@ async def complete_task(task_id: str):
 @mcp.tool()
 async def get_tasks_to_review():
     """
-    Получить список задач, ожидающих проверки администратором
-    (задачи в статусе DONE).
+    Get the list of tasks awaiting admin review (tasks in DONE status).
     """
     async with httpx.AsyncClient() as client:
         response = await client.get(
@@ -127,13 +125,13 @@ async def get_tasks_to_review():
 @mcp.tool()
 async def approve_task(task_id: str):
     """
-    Апрувнуть задачу по её ID. Задача должна быть в статусе DONE.
-    После апрува задача переходит в статус APPROVED, и в Outbox
-    добавляется событие task.completed для начисления награды
-    исполнителю через Kafka.
+    Approve a task by its ID. The task must be in DONE status.
+    After approval the task moves to APPROVED, and a task.completed
+    event is added to the Outbox to pay out the reward to the performer
+    via Kafka.
 
     Args:
-        task_id: ID задачи в формате UUID.
+        task_id: Task ID (UUID).
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -147,12 +145,12 @@ async def approve_task(task_id: str):
 @mcp.tool()
 async def reject_task(task_id: str):
     """
-    Отклонить задачу по её ID. Задача должна быть в статусе DONE.
-    После отклонения задача переходит в статус REJECTED — исполнитель
-    сможет доработать её и снова вызвать complete_task.
+    Reject a task by its ID. The task must be in DONE status.
+    After rejection the task moves to REJECTED — the performer can
+    rework it and call complete_task again.
 
     Args:
-        task_id: ID задачи в формате UUID.
+        task_id: Task ID (UUID).
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -166,12 +164,12 @@ async def reject_task(task_id: str):
 @mcp.tool()
 async def create_task(title: str, description: str, reward: float):
     """
-    Создать новую задачу (только для администратора).
+    Create a new task (admin only).
 
     Args:
-        title: Название задачи, должно быть уникальным.
-        description: Описание задачи.
-        reward: Награда за выполнение задачи.
+        title: Task title, must be unique.
+        description: Task description.
+        reward: Reward for completing the task.
     """
     async with httpx.AsyncClient() as client:
         response = await client.post(

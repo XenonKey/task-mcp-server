@@ -43,5 +43,5 @@ Parameters:
 
 Outputs:
   ApiUrl:
-    Description: "Публичный URL твоего MCP-сервера"
+    Description: "Public URL of your MCP server"
     Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/mcp"
